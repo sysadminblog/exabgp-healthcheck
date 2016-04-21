@@ -1,0 +1,25 @@
+neighbor 192.168.1.254 {
+
+  # Neighbor Settings
+  description "Sample BGP neighbor";
+  router-id 192.168.1.1;
+  local-address 192.168.1.1;
+  local-as 64512;
+  peer-as 64512;
+  hold-time 10;
+  graceful-restart 60;
+  group-updates true;
+
+  family {
+    inet4 unicast unicast;
+    inet6 unicast unicast;
+  }
+
+  process ipv4service {
+    run /etc/exabgp/healthcheck.pl -c announce -n ipv4service;
+  }
+  process ipv6service {
+    run /etc/exabgp/healthcheck.pl -c announce -n ipv6service;
+  }
+
+}
