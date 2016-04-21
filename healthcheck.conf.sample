@@ -1,0 +1,42 @@
+[global]
+
+# Wait N seconds between health checks
+interval=3
+# Wait N seconds for the check command to execute. The timeout must be lower than the interval.
+timeout=2
+# Metric to set. Must be between 1 and 1000.
+metric=100
+# Check N times before considering the service up
+rise=5
+# Check N times before considering the service down
+fall=3
+# Log location. Errors will be logged to logfile.err and debug to logfile.debug (if enabled)
+logfile=/var/log/healthcheck/healthcheck
+# Log the output of the check command to the debug log. Requires debug=yes
+logcheck=no
+# Enable the debug log
+debug=no
+
+[ipv4service]
+
+# The next hop IP address. This will usually be this server.
+nexthop=192.168.1.1
+# The command to use for health check
+command="/usr/local/scripts/check_ipv4.sh"
+# IP addresses to announce
+ip=10.1.1.1/32
+ip=10.1.1.2/32
+# If FILE exists, the service is considered disabled
+disable=/etc/exabgp/healthcheck_ipv4service.disable
+
+[ipv6service]
+
+# The next hop IP address. This will usually be this server.
+nexthop=fd12:3456:ffff::1
+# The command to use for health check
+command="/usr/local/scripts/check_ipv6.sh"
+# IP addresses to announce
+ip=fd12:3456:ffff:1::1/128
+ip=fd12:3456:ffff:1::2/128
+# If FILE exists, the service is considered disabled
+disable=/etc/exabgp/healthcheck_ipv6service.disable
