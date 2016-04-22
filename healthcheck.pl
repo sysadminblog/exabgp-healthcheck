@@ -768,7 +768,7 @@ sub print_help {
   Usage:
 
     With ExaBGP:
-      process dnscachev4 {
+      process myservice {
         run $full_name -c announce -n myservice;
       }
 
