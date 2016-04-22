@@ -86,10 +86,10 @@ Call the script with `-h` or `-help` to get the printed help version: `/etc/exab
 
     Commands:
 
-      announce          Run checks and announce services. [Default]
+      announce          Run checks and announce services.
       validate          Validate the configuration file and exit.
       status            Check the status and exit.
-      list [Default]    List the details for a check/all checks.
+      list [Default]    List the details for a check/all checks and exit.
 
     Arguments:
 
