@@ -65,24 +65,24 @@ Call the script with `-h` or `-help` to get the printed help version: `/etc/exab
 
     With ExaBGP:
       process myservice {
-        run $full_name -c announce -n myservice;
+        run /etc/exabgp/healthcheck.pl -c announce -n myservice;
       }
 
     Command Line:
       Run script:
-        $full_name -c announce -n myservice -f /etc/exabgp/healthcheck.conf
+        /etc/exabgp/healthcheck.pl -c announce -n myservice -f /etc/exabgp/healthcheck.conf
       Validate config of all services:
-        $full_name -c validate
+        /etc/exabgp/healthcheck.pl -c validate
       Validate config of a single service:
-        $full_name -c validate -n myservice
+        /etc/exabgp/healthcheck.pl -c validate -n myservice
       Check status of all services:
-        $full_name -c status
+        /etc/exabgp/healthcheck.pl -c status
       Check status of a single service:
-        $full_name -c status -n myservice
+        /etc/exabgp/healthcheck.pl -c status -n myservice
       List details of all configured checks:
-        $full_name -c list
+        /etc/exabgp/healthcheck.pl -c list
       List details of a specific check:
-        $full_name -c list -n myservice
+        /etc/exabgp/healthcheck.pl -c list -n myservice
 
     Commands:
 
