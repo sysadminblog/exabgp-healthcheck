@@ -301,7 +301,7 @@ sub run_announce {
     if ($new_config_md5 ne $config_md5) {
       # File has changed, validate config
       $logger->debug("$check: Configuration file has changed since last check, validating config");
-      $config_valid = validate_config($config,$check);
+      $config_valid = validate_config($check);
       if ($config_valid ne 'valid') {
         $logger->error("$check: Configuration file is not valid. Not reloading any changes. Error: $config_valid");
       } else {
