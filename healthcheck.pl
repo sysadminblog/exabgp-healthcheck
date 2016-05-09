@@ -1,8 +1,17 @@
 #!/usr/bin/perl
 
+########################################################################################
+# ExaBGP - Health Checking Script
+# GitHub project page: https://github.com/shthead/exabgp-healthcheck
+########################################################################################
+# This script is used with ExaBGP to control BGP announcements to various services.
+# The IP's are only announced if the health check passes.
+# See the GitHub page for more information.
+
 use strict;
 use warnings;
 
+use Array::Utils qw(array_diff);
 use Config::IniFiles;
 use Digest::MD5::File qw( file_md5_hex );
 use File::Basename;
@@ -16,6 +25,7 @@ use Time::Piece;
 # Default variables
 my $help        = undef;
 my $check       = undef;
+my $version     = undef;
 my $config      = '/etc/exabgp/healthcheck.conf';
 my $command     = 'list';
 my $healthdir   = '/var/healthcheck/';
@@ -26,6 +36,7 @@ my @commands = ( 'list', 'announce', 'validate', 'status' );
 # Parse the provided options
 GetOptions(
   "help|h"      => \$help,
+  "version|v"   => \$version,
   "name|n=s"    => \$check,
   "config|f=s"  => \$config,
   "command|c=s" => \$command,
@@ -33,12 +44,17 @@ GetOptions(
 
 ########## Begin Script ##########
 
+my $script_version = '0.4';
+
 # Get this scripts name
 my $name = basename($0);
 my $full_name = $0;
 
 # If we need to print help, print and exit.
 if ($help) { print_help(); }
+
+# If we need to print the version for the script, print and exit.
+if ($version) { print_version(); }
 
 # Check to see if this script is running interactively. If so, let debug messages go to console
 my $console_debug = undef;
@@ -319,7 +335,10 @@ sub run_announce {
         # Check that the list of IP's and the metric is still the same. If the list of IP's has been changed, withdraw all old routes and announce new ones. This should only be done if the routes are CURRENTLY announced.
         if ($service_state ne 'down') {
           my @new_service_ips = get_value('ip');
-          if (@new_service_ips != @service_ips) {
+          if (array_diff(@new_service_ips, @service_ips)) {
+            my $new_ips_csv = join(',', @new_service_ips);
+            my $old_ips_csv = join(',', @service_ips);
+            $logger->debug("$check: IP list changed. Old IP's: $old_ips_csv. New IP's: $new_ips_csv.");
             $logger->info("$check: IP list has changed. Withdrawing and announcing routes");
             withdraw_ips();
             @service_ips = @new_service_ips;
@@ -754,6 +773,15 @@ sub start_log {
   return $logger;
 }
 
+# Sub to print out version info
+sub print_version {
+  print <<EOVERSION
+ExaBGP health check script - version $script_version.
+See the GitHub page for version history and change log: https://github.com/shthead/exabgp-healthcheck
+EOVERSION
+  ;exit;
+}
+
 # Sub to print usage/config info
 sub print_help {
   my ($errors) = @_;
@@ -802,6 +830,7 @@ sub print_help {
                         This argument is REQUIRED for the 'announce' command.
       -config   | -f    The path to the configuration file. Defaults to /etc/exabgp/healthcheck.conf.
       -help     | -h    Print this help message and exit.
+      -version  | -v    Print the version and exit.
 
   General Information:
 

@@ -15,7 +15,8 @@ As an example of what this can be used for, see [my blog post].
 ## Requirements
 The following Perl modules are required:
 ```
-Config::IniFiles;
+Array::Utils
+Config::IniFiles
 Digest::MD5::File
 File::Basename
 File::Pid
@@ -27,7 +28,7 @@ Time::Piece
 ```
 On a minimal Debian install you can install the required Perl modules with this command:
 ```
-apt-get install libconfig-inifiles-perl libdigest-md5-file-perl libfile-pid-perl liblog-log4perl-perl libswitch-perl liblog-dispatch-filerotate-perl
+apt-get install libconfig-inifiles-perl libdigest-md5-file-perl libfile-pid-perl liblog-log4perl-perl libswitch-perl liblog-dispatch-filerotate-perl libarray-utils-perl
 ```
 
 ## Configuration File

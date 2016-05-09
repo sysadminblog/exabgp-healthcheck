@@ -1,0 +1,29 @@
+v0.4 - 09/05/16
+------------------------------
+NEW FEATURES
+* Add version option to script - call ./healthcheck.pl -v to get version.
+* Change log file added.
+* Extra debug logging added - if debug=yes is set for the service and the
+list of IP's configured for the service is changed, the old and new IP's
+will be logged to the debug log file.
+
+BUG FIXES
+* If the configuration file is edited to change the IP's announced, when
+it is reloaded automatically the changed IP is not detected. This only
+affects IP changes that have the same number of IP's as before the
+change. The script now requires the Perl module Array::Utils.
+
+v0.3 - 29/04/16
+------------------------------
+BUG FIXES
+* Fix error when re-reading configuration file due to changes due to
+incorrect arguments passed to validate_config().
+
+v0.2 - 22/04/16
+------------------------------
+BUG FIXES
+* Fix typos in help output/readme
+
+v0.1 - 21/04/16
+------------------------------
+* Initial release to GitHub
