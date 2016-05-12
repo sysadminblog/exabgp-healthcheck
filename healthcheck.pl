@@ -558,11 +558,37 @@ sub validate_config {
   # Ensure there is at least one IP address supplied
   if (! get_value('ip',$section)) { $errors .= "  - No IP addresses to advertise\n"; }
   else {
-    # Ensure that the IP addresses are in a valid and that they are in the correct address family.
-    my @ips = get_value('ip',$section);
-    foreach my $ip (@ips) {
-      if ($nexthop_family eq '4') { if (!is_ipv4($ip)) { $errors .= "  - IP address $ip is not not a valid IPv4 address.\n"; } }
-      if ($nexthop_family eq '6') { if (!is_ipv6($ip)) { $errors .= "  - IP address $ip is not not a valid IPv6 address.\n"; } }
+    # We can't validate the IP's unless $nexthop_family has been set.
+    if (! $nexthop_family) { $errors .= "  - IP address validation skipped due to nexthop configuration error\n"; }
+    else {
+      # Ensure that the IP addresses are in a valid and that they are in the correct address family.
+      my @ips = get_value('ip',$section);
+      foreach my $ip (@ips) {
+        # If the IP's are not in the format x.x.x.x/x or ::1/x, validate them
+        if ($ip !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}/ && $ip !~ m/[A-Za-z0-9:]+\/\d{1,3}/) {
+          if ($nexthop_family eq '4') { if (! is_ipv4($ip)) { $errors .= "  - IP address $ip is not not a valid IPv4 address\n"; } }
+          if ($nexthop_family eq '6') { if (! is_ipv6($ip)) { $errors .= "  - IP address $ip is not not a valid IPv6 address\n"; } }
+          if (get_value('nexthop',$section) eq $ip) { $errors .= "  - IP address to advertise ($ip) cannot be the same as the nexthop\n"; }
+        }
+        # The IP's are in the format x.x.x.x/x or ::1/x. Split the string into $address and $mask, then validate those.
+        else {
+          my ($address, $mask) = split('/', $ip);
+          # Validations for IPv4
+          if ($nexthop_family eq '4') {
+            # Validate mask is between 1 and 32
+            if (! looks_like_number($mask) || $mask < 1 || $mask > 32) { $errors .= "  - Netmask for address $ip must be between 1 and 32\n"; }
+            if (! is_ipv4($address)) { $errors .= "  - IP address $ip is not a valid IPv4 address\n"; }
+            elsif ($mask eq '32' && get_value('nexthop',$section) eq $address) { $errors .= "  - IP address to advertise ($ip) cannot be the same as the nexthop\n"; }
+          }
+          # Validations for IPv6
+          if ($nexthop_family eq '6') {
+            # Validate mask is between 1 and 128
+            if (! looks_like_number($mask) || $mask < 1 || $mask > 128) { $errors .= "  - Netmask for address $ip must be between 1 and 128\n"; }
+            if (! is_ipv6($address)) { $errors .= "  - IP address $ip is not a valid IPv6 address\n"; }
+            elsif ($mask eq '128' && get_value('nexthop',$section) eq $address) { $errors .= "  - IP address to advertise ($ip) cannot be the same as the nexthop\n"; }
+          }
+        }
+      }
     }
   }
 
