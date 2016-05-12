@@ -406,13 +406,17 @@ sub run_announce {
         if ($last_result ne $result) {
   
           # If the last result was != 0 (fail) but the current result is 0 (success), reset the fall counter
+          # The process name needs to be updated otherwise it will still be in the falling state when checking the process list
           if ($last_result ne 0 && $result eq 0) {
             $service_fall = 0;
+            proc_status('UP');
           }
   
           # If the last result was 0 (success) but the current result is != 0 (fail), reset the rise counter
+          # The process name needs to be updated otherwise it will still be in the rising state when checking the process list
           if ($last_result eq 0 && $result ne 0) {
             $service_rise = 0;
+            proc_status('DOWN');
           }
   
         }
