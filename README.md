@@ -41,7 +41,7 @@ Configure ExaBGP as normal and add the appropriate process for the Neighbor, eg.
       }
 ```
 
-For complete instructions, see the [Installation wiki page]. There is also a [quick start page].
+For complete instructions, see the [Installation wiki page].
 
 ## Configuration File
 A sample configuration file is included for both ExaBGP and healthcheck.pl.
