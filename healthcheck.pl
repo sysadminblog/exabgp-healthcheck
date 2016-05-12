@@ -681,8 +681,14 @@ sub proc_status {
 
 # Sub to announce all IP's
 sub announce_ips {
+  # Ensure the service_state is up before announcing anything
   if ($service_state eq 'up') {
     foreach my $ip (@service_ips) {
+      # If there was no mask specified, it will default to /32 for IPv4 or /128 for IPv6
+      if ($ip !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}/ && $ip !~ m/[A-Za-z0-9:]+\/\d{1,3}/) {
+        if (is_ipv4($ip)) { $ip = "$ip/32"; }
+        if (is_ipv6($ip)) { $ip = "$ip/128"; }
+      }
       my $announce = "announce route $ip next-hop $service_nexthop med $service_metric";
       $logger->debug("$check: Send to exabgp: $announce");
       print "$announce\n";
@@ -693,6 +699,11 @@ sub announce_ips {
 # Sub to withdraw all IP's
 sub withdraw_ips {
   foreach my $ip (@service_ips) {
+    # If there was no mask specified, it will default to /32 for IPv4 or /128 for IPv6
+    if ($ip !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}/ && $ip !~ m/[A-Za-z0-9:]+\/\d{1,3}/) {
+      if (is_ipv4($ip)) { $ip = "$ip/32"; }
+      if (is_ipv6($ip)) { $ip = "$ip/128"; }
+    }
     my $announce = "withdraw route $ip next-hop $service_nexthop med $service_metric";
     $logger->debug("$check: Send to exabgp: $announce");
     print "$announce\n";
