@@ -1,3 +1,13 @@
+v0.4.1 - 12/05/16
+------------------------------
+NEW FEATURES
+* Use the Data::Validate::IP module for validating IP addresses. The
+nexthop IP and any IP's to announce are validated to ensure that they
+are valid and belong to the same address family. If there is a mask
+specified they are also validated.
+* If no netmask is specified for IP's to be announced, default to /32
+or /128.
+
 v0.4 - 09/05/16
 ------------------------------
 NEW FEATURES
