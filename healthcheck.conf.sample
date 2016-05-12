@@ -1,42 +1,89 @@
+# For complete configuration instructions see the wiki page:
+# https://github.com/shthead/exabgp-healthcheck/wiki/Configuration-File
+
 [global]
 
-# Wait N seconds between health checks
+# The interval determins how often health checks are ran (in seconds).
+# An interval of 3 will wait 3 seconds between each health check.
 interval=3
-# Wait N seconds for the check command to execute. The timeout must be lower than the interval.
+
+# Wait N seconds for the check command to execute. The timeout must be
+# lower than the interval. If the timeout is reached the service is assumed
+# down and the process of withdrawing the route begins.
 timeout=2
-# Metric to set. Must be between 1 and 1000.
+
+# The MED of all routes being announced. Must be between 1 and 1000.
 metric=100
-# Check N times before considering the service up
+
+# How many times the service check must pass before the service is considered
+# up. If this is set to 5, the service must pass 5 health checks before the
+# route will be announced.
 rise=5
-# Check N times before considering the service down
+
+# How many times the service check must fail before the service is considered
+# down. If this is set to 5, the service must fail 5 health checks before the
+# route will be withdrawn.
 fall=3
-# Log location. Errors will be logged to logfile.err and debug to logfile.debug (if enabled)
+
+# Log location. This must be a full path to a file. If the file does not exist
+# it will be created (if the permissions allow it). If the file cannot be
+# created the script will error and exit. Errors will be logged to
+# [filename].err and debug to [filename].debug (if enabled).
 logfile=/var/log/healthcheck/healthcheck
+
 # Log the output of the check command to the debug log. Requires debug=yes
 logcheck=no
+
 # Enable the debug log
 debug=no
 
 [ipv4service]
 
-# The next hop IP address. This will usually be this server.
+# The next hop IP address for the route to be advertised with BGP. This will
+# usually be the servers main IP address. This IP must belong to the same
+# address family as the IP's being announced.
 nexthop=192.168.1.1
-# The command to use for health check
+
+# The command to use for health check. This can be anything you like - a bash
+# one liner or a script etc. The command that is executed MUST have an exit
+# code of 0 for success. Any other exit code is considered fail.
 command="/usr/local/scripts/check_ipv4.sh"
-# IP addresses to announce
-ip=10.1.1.1/32
-ip=10.1.1.2/32
-# If FILE exists, the service is considered disabled
+
+# IP addresses to announce. You can specify as many as you like. Ensure that
+# the IP addresses all belong to the same address family as the nexthop IP.
+# If you do not specify a mask for the IP address it is assumed to be /128 for
+# IPv6 and /32 for IPv4.
+ip=10.1.1.1
+ip=10.1.1.2
+
+# If this file exists the service will be considered down. You can use this to
+# disable the service easily - simple touch the file and the routes will be
+# withdrawn. Once you are done, remove the file and the service will start
+# being checked again.
 disable=/etc/exabgp/healthcheck_ipv4service.disable
+
 
 [ipv6service]
 
-# The next hop IP address. This will usually be this server.
+# The next hop IP address for the route to be advertised with BGP. This will
+# usually be the servers main IP address. This IP must belong to the same
+# address family as the IP's being announced.
 nexthop=fd12:3456:ffff::1
-# The command to use for health check
+
+# The command to use for health check. This can be anything you like - a bash
+# one liner or a script etc. The command that is executed MUST have an exit
+# code of 0 for success. Any other exit code is considered fail.
 command="/usr/local/scripts/check_ipv6.sh"
-# IP addresses to announce
-ip=fd12:3456:ffff:1::1/128
-ip=fd12:3456:ffff:1::2/128
-# If FILE exists, the service is considered disabled
+
+# IP addresses to announce. You can specify as many as you like. Ensure that
+# the IP addresses all belong to the same address family as the nexthop IP.
+# If you do not specify a mask for the IP address it is assumed to be /128 for
+# IPv6 and /32 for IPv4.
+ip=fd12:3456:ffff:1::1
+ip=fd12:3456:ffff:1::2
+
+# If this file exists the service will be considered down. You can use this to
+# disable the service easily - simple touch the file and the routes will be
+# withdrawn. Once you are done, remove the file and the service will start
+# being checked again.
 disable=/etc/exabgp/healthcheck_ipv6service.disable
