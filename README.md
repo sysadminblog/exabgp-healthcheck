@@ -33,7 +33,7 @@ Time::Piece
 For more information, see the [System Requirements wiki page].
 
 ## Installation
-Copy healthcheck.pl to the ExaBGP directory, usually /etc/exabgp. Create a configuration file for the health check script in /etc/exabgp/healthcheck.conf.
+Copy healthcheck.pl to the ExaBGP directory, usually `/etc/exabgp`. Create a configuration file for the health check script in `/etc/exabgp/healthcheck.conf`.
 
 Configure ExaBGP as normal and add the appropriate process for the Neighbor, eg.:
 ```
