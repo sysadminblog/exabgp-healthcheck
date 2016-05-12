@@ -19,6 +19,7 @@ An installation of Perl is required with the following modules:
 ```
 Array::Utils
 Config::IniFiles
+Data::Validate::IP
 Digest::MD5::File
 File::Basename
 File::Pid

@@ -13,6 +13,7 @@ use warnings;
 
 use Array::Utils qw(array_diff);
 use Config::IniFiles;
+use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Digest::MD5::File qw( file_md5_hex );
 use File::Basename;
 use File::Pid;
@@ -44,7 +45,7 @@ GetOptions(
 
 ########## Begin Script ##########
 
-my $script_version = '0.4';
+my $script_version = '0.4.1';
 
 # Get this scripts name
 my $name = basename($0);
@@ -225,11 +226,11 @@ sub init {
   if (! exists($commands{$command})) { $errors .= "Error: An invalid command was provided: $command\n"; }
 
   # If the script is to announce routes, validate there was a check name provided
-  if ($command eq 'announce' && ! $check) { $errors .= "Error: No check name was specified"; }
+  if ($command eq 'announce' && ! $check) { $errors .= "Error: No check name was specified\n"; }
 
   # Verify that the healthcheck directory exists
-  if (! -d $healthdir) { $errors .= "Error: The directory $healthdir does not exist"; }
-  elsif (! -w $healthdir) { $errors .= "Error: The directory $healthdir is not writable"; }
+  if (! -d $healthdir) { $errors .= "Error: The directory $healthdir does not exist\n"; }
+  elsif (! -w $healthdir) { $errors .= "Error: The directory $healthdir is not writable\n"; }
 
   # Check to see if any errors were returned. If they were, print help.
   if ($errors) { print_help($errors); }
@@ -502,77 +503,83 @@ sub validate_config {
   if (! $cfg->SectionExists($section) ) { return "No configuration for the $section section\n"; }
 
   # Ensure there is a log file
-  if (! get_value('logfile',$section)) { $errors .= "No log file specified\n"; }
+  if (! get_value('logfile',$section)) { $errors .= "  - No log file specified\n"; }
 
   # Ensure there is a metric set and it is valid
-  if (! get_value('metric',$section)) { $errors .= "No metric specified\n"; }
-  elsif (! looks_like_number(get_value('metric',$section))) { $errors .= "Metric specified is not a number\n"; }
-  elsif (get_value('metric',$section) < 1 || get_value('metric',$section) > 1000) { $errors .= "Metric specified must be between 1 and 1000\n"; }
+  if (! get_value('metric',$section)) { $errors .= "  - No metric specified\n"; }
+  elsif (! looks_like_number(get_value('metric',$section))) { $errors .= "  - Metric specified is not a number\n"; }
+  elsif (get_value('metric',$section) < 1 || get_value('metric',$section) > 1000) { $errors .= "  - Metric specified must be between 1 and 1000\n"; }
 
   # Ensure there is a check interval set and it is valid
-  if (! get_value('interval',$section)) { $errors .= "No check interval specified\n"; }
-  elsif (! looks_like_number(get_value('interval',$section))) { $errors .= "Check interval specified is not a number\n"; }
+  if (! get_value('interval',$section)) { $errors .= "  - No check interval specified\n"; }
+  elsif (! looks_like_number(get_value('interval',$section))) { $errors .= "  - Check interval specified is not a number\n"; }
 
   # Ensure there is a check timeout set
-  if (! get_value('timeout',$section)) { $errors .= "No timeout value specified\n"; }
-  elsif (! looks_like_number(get_value('timeout',$section))) { $errors .= "Timeout specified is not a number\n"; }
+  if (! get_value('timeout',$section)) { $errors .= "  - No timeout value specified\n"; }
+  elsif (! looks_like_number(get_value('timeout',$section))) { $errors .= "  - Timeout specified is not a number\n"; }
 
   # Ensure that the check timeout is less than the check interval
-  if (get_value('timeout',$section) >= get_value('interval',$section)) { $errors .= "The timeout specified is larger than the check interval\n"; }
+  if (get_value('timeout',$section) >= get_value('interval',$section)) { $errors .= "  - The timeout specified is larger than the check interval\n"; }
 
   # Ensure that there is a rise value set and it is valid
-  if (! get_value('rise',$section)) { $errors .= "No rise value specified\n"; }
-  elsif (! looks_like_number(get_value('rise',$section))) { $errors .= "Rise value specified is not a number\n"; }
+  if (! get_value('rise',$section)) { $errors .= "  - No rise value specified\n"; }
+  elsif (! looks_like_number(get_value('rise',$section))) { $errors .= "  - Rise value specified is not a number\n"; }
 
   # Ensure that there is a fall value set and it is valid
-  if (! get_value('fall',$section)) { $errors .= "No fall value specified\n"; }
-  elsif (! looks_like_number(get_value('fall',$section))) { $errors .= "Fall value specified is not a number\n"; }
+  if (! get_value('fall',$section)) { $errors .= "  - No fall value specified\n"; }
+  elsif (! looks_like_number(get_value('fall',$section))) { $errors .= "  - Fall value specified is not a number\n"; }
 
   # Ensure there is a logcheck value
-  if (! get_value('logcheck',$section)) { $errors .= "No logcheck value specified\n"; }
-  elsif (get_value('logcheck',$section) ne 'yes' && get_value('logcheck',$section) ne 'no') { $errors .= "Logcheck value must be yes or no\n"; }
+  if (! get_value('logcheck',$section)) { $errors .= "  - No logcheck value specified\n"; }
+  elsif (get_value('logcheck',$section) ne 'yes' && get_value('logcheck',$section) ne 'no') { $errors .= "  - Logcheck value must be yes or no\n"; }
 
   # Ensure there is a logcheck value
-  if (! get_value('debug',$section)) { $errors .= "No debug value specified\n"; }
-  elsif (get_value('debug',$section) ne 'yes' && get_value('debug',$section) ne 'no') { $errors .= "Debug value must be yes or no\n"; }
+  if (! get_value('debug',$section)) { $errors .= "  - No debug value specified\n"; }
+  elsif (get_value('debug',$section) ne 'yes' && get_value('debug',$section) ne 'no') { $errors .= "  - Debug value must be yes or no\n"; }
 
   # Ensure there is a check command
-  if (! get_value('command',$section)) { $errors .= "No check command specified\n"; } 
+  if (! get_value('command',$section)) { $errors .= "  - No check command specified\n"; } 
 
-  # Ensure there is at least one IP address supplied
-  if (! get_value('ip',$section)) { $errors .= "No IP addresses to advertise\n"; }
+  # Next hop IP
+  my $nexthop_family;
+  if (! get_value('nexthop',$section)) { $errors .= "  - Next hop IP address not supplied\n"; }
   else {
-    # Ensure that the IP addresses are in a valid format
-    my @ips = get_value('ip',$section);
-    foreach my $ip (@ips) {
-      if ($ip !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}/ && $ip !~ m/[A-Za-z0-9:]+\/\d{2,3}/) {
-        $errors .= "IP address $ip is not in the valid format, eg. 203.170.85.1/32\n";
-      }
+    my $nexthop = get_value('nexthop',$section);
+    # Ensure next hop IP is valid
+    if (is_ipv4($nexthop)) {
+      $nexthop_family = '4';
+    } elsif (is_ipv6($nexthop)) {
+      $nexthop_family = '6';
+    } else {
+      $errors .= "  - Next hop IP address not valid. It should be an IPv4 or IPv6 address.\n";
     }
   }
 
-  # Next hop IP
-  if (! get_value('nexthop',$section)) { $errors .= "Next hop IP address not supplied\n"; }
+  # Ensure there is at least one IP address supplied
+  if (! get_value('ip',$section)) { $errors .= "  - No IP addresses to advertise\n"; }
   else {
-    if (get_value('nexthop',$section) !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ && get_value('nexthop',$section) !~ m/[A-Za-z0-9:]+/) {
-      $errors .= "Next hop IP address not valid\n";
+    # Ensure that the IP addresses are in a valid and that they are in the correct address family.
+    my @ips = get_value('ip',$section);
+    foreach my $ip (@ips) {
+      if ($nexthop_family eq '4') { if (!is_ipv4($ip)) { $errors .= "  - IP address $ip is not not a valid IPv4 address.\n"; } }
+      if ($nexthop_family eq '6') { if (!is_ipv6($ip)) { $errors .= "  - IP address $ip is not not a valid IPv6 address.\n"; } }
     }
   }
 
   # Disable file
-  if (! get_value('disable',$section)) { $errors .= "No disable file specified\n"; }
+  if (! get_value('disable',$section)) { $errors .= "  - No disable file specified\n"; }
 
   # Ensure that the script can do logging
   my $logfile = get_value('logfile',$section);
   my $logdir = dirname($logfile);
   if (! -d $logdir) {
-    mkdir $logdir or $errors .= "Could not create log directory $logdir: $!\n";
+    mkdir $logdir or $errors .= " - Could not create log directory $logdir: $!\n";
     # This script will probably be running as a different user than it will be with ExaBGP if it is being run on the command line so delete the directory and let ExaBGP create it
     if (-d $logdir && $console_debug) { rmdir $logdir; }
   } else {
-    if (-f $logfile && ! -w $logfile) { $errors .= "Could not write to log file $logfile\n"; }
+    if (-f $logfile && ! -w $logfile) { $errors .= "  - Could not write to log file $logfile\n"; }
     elsif (! -f $logfile) {
-      open my $LOGFH, '>', "$logfile" or $errors .= "Could not create log file $logfile: $!\n";
+      open my $LOGFH, '>', "$logfile" or $errors .= "  - Could not create log file $logfile: $!\n";
       if ($LOGFH) {
         close $LOGFH;
       }
