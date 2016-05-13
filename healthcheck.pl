@@ -45,7 +45,7 @@ GetOptions(
 
 ########## Begin Script ##########
 
-my $script_version = '0.4.2';
+my $script_version = '0.4.3';
 
 # Get this scripts name
 my $name = basename($0);
@@ -66,7 +66,7 @@ else { $SIG{INT} = sub { }; $SIG{TERM} = \&terminate; }
 select STDOUT; $| = 1;
 
 # Various variables that are used
-my ($cfg,$logger,$service_state,$service_metric,$service_nexthop,@service_ips,$statusfile,$pidfile,$pid);
+my ($cfg,$logger,$service_state,$service_metric,$service_nexthop,@service_ips,$statusfile,$pidfile,$pid,$cmd,$logcheck);
 
 # Initialise the script with some basic sanity checks
 init();
@@ -286,12 +286,27 @@ sub run_announce {
   # Set the rise/fall values initially
   my $service_rise = 0;
   my $service_fall = 0;
+
+  # Get the configured values for rise/fall
+  my $service_rise_req = get_value('rise');
+  my $service_fall_req = get_value('fall');
   
   # Get the log path
   my $log_path = get_value('logfile');
   
   # Get the debug option
   my $service_debug = get_value('debug');
+
+  # Get the check interval
+  my $interval = get_value('interval');
+
+  # Get the check command. This will be prepended with the "timeout" utility for executing the check.
+  my $command = get_value('command');
+  my $timeout = get_value('timeout');
+  $cmd = "timeout $timeout $command";
+
+  # Should we log the check output
+  $logcheck = get_value('logcheck');
   
   # Last result variable
   my $last_result = undef;
@@ -301,10 +316,11 @@ sub run_announce {
 
   # Get the current hash of the config file to check for changes
   my $config_md5 = file_md5_hex($config);
+  my $new_config_md5 = $config_md5;
 
   # Config is valid
   my $config_valid = 'valid';
-  
+
   # Start loop
   while (1) {
   
@@ -313,18 +329,20 @@ sub run_announce {
   
     $logger->debug("$check: Check start");
   
-    # Check the hash of the config file. If it has changed since the last run, re-read the config to make sure that we use the correct values.
-    my $new_config_md5 = file_md5_hex($config);
+    # Check the hash of the config file only if it exists still.
+    
+    if (-f $config) { $new_config_md5 = file_md5_hex($config); }
+    else { $logger->info("$check: The configuration file has disappeared?"); }
+
+    # If the config has has changed since last run, reload the config, validated it and use the new values.
     if ($new_config_md5 ne $config_md5) {
-      # File has changed, validate config
-      $logger->debug("$check: Configuration file has changed since last check, validating config");
+      # File has changed, re-read and validate config
+      $logger->debug("$check: Configuration file has changed since last check, reloading and validating config");
+      $cfg->ReadConfig;
       $config_valid = validate_config($check);
       if ($config_valid ne 'valid') {
         $logger->error("$check: Configuration file is not valid. Not reloading any changes. Error: $config_valid");
       } else {
-        # Re-read config
-        $cfg->ReadConfig;
-  
         # Check the log path is still the same
         if (get_value('logfile') ne $log_path || get_value('debug') ne $service_debug) {
           # Restart logger due to config change
@@ -332,11 +350,39 @@ sub run_announce {
           $service_debug = get_value('debug');
           $logger = start_log();
         }
-  
-        # Check that the list of IP's, metric and next hop address is still the same. If there is changes and the service state is currently up (routes are announced) the routes need to be withdrawn and then announced.
+
+        # Check if the interval for checks has been changed
+        if (get_value('interval') ne $interval) {
+          $logger->info("$check: Check interval has been changed from $interval to ".get_value('interval'));
+          $interval = get_value('interval');
+        }
+
+        # Check if the option to log check output has been changed
+        if (get_value('logcheck') ne $logcheck) {
+          $logger->info("$check: Check logging has changed from $logcheck to ".get_value('logcheck'));
+          $logcheck = get_value('logcheck');
+        }
+
+        # Check if the values for rise/fall have changed
+        if (get_value('rise') ne $service_rise_req) {
+          $logger->info("$check: Check rise value has changed from $service_rise_req to ".get_value('rise'));
+          $service_rise_req = get_value('rise');
+        }
+        if (get_value('fall') ne $service_fall_req) {
+          $logger->info("$check: Check fall value has changed from $service_fall_req to ".get_value('fall'));
+          $service_fall_req = get_value('fall');
+        }
+
+        # Check if the timeout or check command has been changed.
+        if (get_value('timeout') ne $timeout || get_value('command') ne $command) {
+          if (get_value('timeout') ne $timeout) { $logger->info("$check: Check timeout has been changed from $timeout to ".get_value('timeout')); $timeout = get_value('timeout'); }
+          if (get_value('command') ne $command) { $logger->info("$check: Check command has been changed from $command to ".get_value('command')); $command = get_value('command'); }
+          $cmd = "timeout $timeout $command";
+        }
+
         # Define the variable $changes - this will be set if there are changes that require all routes to be withdrawn and announced again.
         my $changes;
-
+  
         # Check if the metric has changed
         if ($service_metric ne get_value('metric')) {
           $logger->info("$check: Metric for routes has changed from $service_metric to ".get_value('metric'));
@@ -469,7 +515,7 @@ sub run_announce {
         if ($service_state eq 'down') {
           $service_rise++;
           # Check if the value of $service_rise is high enough to mark the service as up
-          if ($service_rise >= get_value('rise')) {
+          if ($service_rise >= $service_rise_req) {
             $logger->info("$check: Last check succeeded. Service has met the number of success checks required, marking as up and announcing IP's");
             # Service should be marked as up.
             $service_state = 'up';
@@ -480,10 +526,10 @@ sub run_announce {
             # Set the process status
             proc_status('UP');
           } else {
-            my $service_rise_left = get_value('rise') - $service_rise;
+            my $service_rise_left = $service_rise_req - $service_rise;
             $logger->info("$check: Last check succeeded. Service needs $service_rise_left checks to succeed before it is active");
             # Set the process status
-            proc_status("DOWN | RISING $service_rise/".get_value('rise'));
+            proc_status("DOWN | RISING $service_rise/$service_rise_req");
           }
         }
   
@@ -493,7 +539,7 @@ sub run_announce {
         if ($service_state eq 'up') {
           $service_fall++;
           # Check if the value of $service_fall is high enough to mark the service as down
-          if ($service_fall >= get_value('fall')) {
+          if ($service_fall >= $service_fall_req) {
             $logger->info("$check: Last check failed. Service has met the number of failure checks required, marking service as down and withdrawing IP's");
             # Service should be marked as down
             $service_state = 'down';
@@ -504,18 +550,15 @@ sub run_announce {
             # Set the process status
             proc_status('DOWN');
           } else {
-            my $service_fall_left = get_value('fall') - $service_fall;
+            my $service_fall_left = $service_fall_req - $service_fall;
             $logger->info("$check: Last check failed. Service needs $service_fall_left checks to fail before it is down");
             # Set the process status
-            proc_status("UP | FALLING $service_fall/".get_value('fall'));
+            proc_status("UP | FALLING $service_fall/$service_fall_req");
           }
         }
   
       }
     }
-  
-    # Get the check interval
-    my $interval = get_value('interval');
   
     # Check how long this check took, sleep for the appropriate amount of time to start next check
     my $end = time();
@@ -560,7 +603,7 @@ sub validate_config {
   elsif (! looks_like_number(get_value('timeout',$section))) { $errors .= "  - Timeout specified is not a number\n"; }
 
   # Ensure that the check timeout is less than the check interval
-  if (get_value('timeout',$section) >= get_value('interval',$section)) { $errors .= "  - The timeout specified is larger than the check interval\n"; }
+  if (get_value('timeout',$section) > get_value('interval',$section)) { $errors .= "  - The timeout specified is larger than the check interval\n"; }
 
   # Ensure that there is a rise value set and it is valid
   if (! get_value('rise',$section)) { $errors .= "  - No rise value specified\n"; }
@@ -765,17 +808,11 @@ sub withdraw_ips {
 
 # Sub to execute check command
 sub run_check {
-  my $cmd = get_value('command');
-  my $timeout = get_value('timeout');
-
   # Remove quotes from start/end of the command if it is quoted
   if ($cmd =~ /^"/) {
     $cmd =~ s/^"//;
     $cmd =~ s/"$//;
   }
-
-  # Prepend the timeout to the check command
-  $cmd = "timeout $timeout $cmd";
 
   $logger->debug("$check: Attempting to fork and run check command [$cmd]");
 
@@ -790,7 +827,7 @@ sub run_check {
     close($pipe);
     my $exit_code = $?;
     $logger->debug("$check: Executed check command [$cmd]. Return code [$exit_code]");
-    if (get_value('logcheck') eq 'yes') {
+    if ($logcheck eq 'yes') {
       $logger->debug("$check: Output from [$cmd]: @result");
     }
     return ($exit_code);

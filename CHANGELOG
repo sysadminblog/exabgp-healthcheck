@@ -1,3 +1,13 @@
+v0.4.3 - 13/05/16
+------------------------------
+BUG FIXES
+* Changes to interval, rise/fall values and logcheck values were not
+being reloaded correctly.
+* Certain changes that resulted in a configuration error that was detected
+when reloading the config resulted in no further changes being applied.
+* If the configuration file disappeared during a certain time (eg. it was
+removed) it would cause the script to crash.
+
 v0.4.2 - 13/05/16
 ------------------------------
 BUG FIXES
