@@ -45,7 +45,7 @@ GetOptions(
 
 ########## Begin Script ##########
 
-my $script_version = '0.4.3';
+my $script_version = '0.4.4';
 
 # Get this scripts name
 my $name = basename($0);

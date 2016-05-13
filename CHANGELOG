@@ -1,3 +1,10 @@
+v0.4.4 - 13/05/16
+------------------------------
+BUG FIXES
+* Certain quoting for the check command will cause the wrong return code -
+strip the quotes from start and end.
+* Perl error when the script starts up under ExaBGP
+
 v0.4.3 - 13/05/16
 ------------------------------
 BUG FIXES
