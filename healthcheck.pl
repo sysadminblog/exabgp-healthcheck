@@ -929,7 +929,7 @@ sub print_help {
   via the GitHub wiki page here: https://github.com/shthead/exabgp-healthcheck/wiki.
 
   For more information, updates and to report bugs, see the GitHub project page:
-  https://github.com/shthead/exabgp-healthcheck/wiki
+  https://github.com/shthead/exabgp-healthcheck
 
   Usage:
 
