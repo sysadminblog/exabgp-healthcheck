@@ -1,3 +1,17 @@
+v0.4.2 - 13/05/16
+------------------------------
+BUG FIXES
+* Fix the process name - if the service was rising or falling it may not
+be updated in some cases.
+* Many configuration file reload enhancements:
+- All IP's are not withdrawn and announced again when they don't need to be
+- If there were multiple configuration file changes, not all of them were
+applied correctly - only some changes may have been applied.
+- If the next hop IP was changed and the service was in the down state, it
+was not being applied when the service came back up.
+- The whole configuration reload part of the script has been cleaned up so
+that it isn't handled differently depending on the current service status.
+
 v0.4.1 - 12/05/16
 ------------------------------
 NEW FEATURES

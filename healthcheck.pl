@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Array::Utils qw(array_diff);
+use Array::Utils qw(array_diff array_minus);
 use Config::IniFiles;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Digest::MD5::File qw( file_md5_hex );
@@ -45,7 +45,7 @@ GetOptions(
 
 ########## Begin Script ##########
 
-my $script_version = '0.4.1';
+my $script_version = '0.4.2';
 
 # Get this scripts name
 my $name = basename($0);
@@ -333,34 +333,71 @@ sub run_announce {
           $logger = start_log();
         }
   
-        # Check that the list of IP's and the metric is still the same. If the list of IP's has been changed, withdraw all old routes and announce new ones. This should only be done if the routes are CURRENTLY announced.
-        if ($service_state ne 'down') {
-          my @new_service_ips = get_value('ip');
-          if (array_diff(@new_service_ips, @service_ips)) {
-            my $new_ips_csv = join(',', @new_service_ips);
-            my $old_ips_csv = join(',', @service_ips);
-            $logger->debug("$check: IP list changed. Old IP's: $old_ips_csv. New IP's: $new_ips_csv.");
-            $logger->info("$check: IP list has changed. Withdrawing and announcing routes");
-            withdraw_ips();
-            @service_ips = @new_service_ips;
-            announce_ips();
-          } elsif ($service_metric ne get_value('metric')) {
-            $logger->info("$check: Metric for routes has changed. Withdrawing and announcing routes");
-            withdraw_ips();
-            $service_metric = get_value('metric');
-            announce_ips();
-          } elsif ($service_nexthop ne get_value('nexthop')) {
-            $logger->info("$check: Nexthop for routes has changed. Withdrawing and announcing routes");
-            withdraw_ips();
-            $service_nexthop = get_value('nexthop');
-            announce_ips();
+        # Check that the list of IP's, metric and next hop address is still the same. If there is changes and the service state is currently up (routes are announced) the routes need to be withdrawn and then announced.
+        # Define the variable $changes - this will be set if there are changes that require all routes to be withdrawn and announced again.
+        my $changes;
+
+        # Check if the metric has changed
+        if ($service_metric ne get_value('metric')) {
+          $logger->info("$check: Metric for routes has changed from $service_metric to ".get_value('metric'));
+          $changes = 1;
+        }
+
+        # Check if the nexthop has changed
+        if ($service_nexthop ne get_value('nexthop')) {
+          $logger->info("$check: Nexthop address has changed from $service_nexthop to ".get_value('nexthop'));
+          $changes = 1;
+        }
+
+        # Check if the list of IP's to announce has changed
+        my @new_service_ips = get_value('ip');
+        if (array_diff(@new_service_ips, @service_ips)) {
+          # The list of IP's to announce has changed and needs to be handled.
+          # Print out a log entry to keep a record of the list of IP's changing
+          my $new_ips_csv = join(',', @new_service_ips);
+          my $old_ips_csv = join(',', @service_ips);
+          $logger->info("$check: IP list changed. Old IP's: $old_ips_csv. New IP's: $new_ips_csv.");
+          # If there are other changes to be made, there is nothing to do - all routes will be withdrawn anyway.
+          # If there are no other changes to make we only need to withdraw the routes for the IP's that are no longer configured and announce the routes for the new IP's that have been configured.
+          if (! $changes) {
+            # First handle the IP's to remove.
+            my @to_remove = array_minus( @service_ips, @new_service_ips );
+            if (@to_remove) {
+              $old_ips_csv = join(',', @to_remove);
+              $logger->debug("$check: Running withdraw routes for the following IP's as they have been removed from the configuration: $old_ips_csv");
+              withdraw_ips($old_ips_csv);
+            }
+            # Handle any new IP's to announce.
+            my @to_announce = array_minus( @new_service_ips, @service_ips );
+            if (@to_announce) {
+              $old_ips_csv = join(',', @to_announce);
+              $logger->debug("$check: Running announce routes for the following IP's as they have been added to the configuration: $old_ips_csv");
+              announce_ips($old_ips_csv);
+            }
+            # Update @service_ips with the new list of IP's
+            @service_ips = get_value('ip');
           }
-        } else {
+        }
+
+        # Check if there are changes to be made.
+        if ($changes) {
+          # If the service is currently in the UP status, withdraw the routes.
+          if ($service_state eq 'up') {
+            $logger->info("$check: All routes are being withdrawn due to metric or nexthop change");
+            withdraw_ips();
+          }
+          # Update the configuration settings
           @service_ips = get_value('ip');
           $service_metric = get_value('metric');
+          $service_nexthop = get_value('nexthop');
+          # Announce the routes again using the new configuration values
+          if ($service_state eq 'up') {
+            $logger->info("$check: Previously withdrawn routes are being announced again due to metric or nexthop change");
+            announce_ips();
+          }
         }
-  
-        $logger->info("$check: Configuration file has been reloaded");
+
+        $logger->info("$check: Configuration file reload complete");
       }
       # Update hash for the config file.
       $config_md5 = $new_config_md5;
@@ -685,16 +722,22 @@ sub proc_status {
 
 # Sub to announce all IP's
 sub announce_ips {
+  my $to_announce = shift || undef;
+  my @announce_list;
+
   # Ensure the service_state is up before announcing anything
   if ($service_state eq 'up') {
-    foreach my $ip (@service_ips) {
+    # If a list of IP's to announce was provided, announce those otherwise announce all IP's in @service_ips.
+    if ($to_announce) { @announce_list = split(',', $to_announce); }
+    else { @announce_list = @service_ips; }
+    foreach my $ip (@announce_list) {
       # If there was no mask specified, it will default to /32 for IPv4 or /128 for IPv6
       if ($ip !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}/ && $ip !~ m/[A-Za-z0-9:]+\/\d{1,3}/) {
         if (is_ipv4($ip)) { $ip = "$ip/32"; }
         if (is_ipv6($ip)) { $ip = "$ip/128"; }
       }
       my $announce = "announce route $ip next-hop $service_nexthop med $service_metric";
-      $logger->debug("$check: Send to exabgp: $announce");
+      $logger->debug("$check: Sending to exabgp: $announce");
       print "$announce\n";
     }
   }
@@ -702,14 +745,20 @@ sub announce_ips {
 
 # Sub to withdraw all IP's
 sub withdraw_ips {
-  foreach my $ip (@service_ips) {
+  my $to_withdraw = shift || undef;
+  my @withdraw_list;
+
+  # If a list of IP's to withdraw was provided, withdraw those otherwise withdraw all IP's in @service_ips.
+  if ($to_withdraw) { @withdraw_list = split(',', $to_withdraw); }
+  else { @withdraw_list = @service_ips; }
+  foreach my $ip (@withdraw_list) {
     # If there was no mask specified, it will default to /32 for IPv4 or /128 for IPv6
     if ($ip !~ m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}/ && $ip !~ m/[A-Za-z0-9:]+\/\d{1,3}/) {
       if (is_ipv4($ip)) { $ip = "$ip/32"; }
       if (is_ipv6($ip)) { $ip = "$ip/128"; }
     }
     my $announce = "withdraw route $ip next-hop $service_nexthop med $service_metric";
-    $logger->debug("$check: Send to exabgp: $announce");
+    $logger->debug("$check: Sending to exabgp: $announce");
     print "$announce\n";
   }
 }
