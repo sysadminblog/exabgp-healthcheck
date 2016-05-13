@@ -746,7 +746,8 @@ sub update_status_file {
   open STATUSFH, '>', $statusfile;
   print STATUSFH "Service State: $status\n";
   print STATUSFH "Last State Change: $current_time\n";
-  print STATUSFH "Nexthop: $service_nexthop\n";
+  if (! defined $service_nexthop) { print STATUSFH "Nexthop: ".get_value('nexthop')."\n"; }
+  else { print STATUSFH "Nexthop: $service_nexthop\n"; }
   print STATUSFH "Managed IP's: ";
   foreach my $ip (@service_ips) {
     print STATUSFH "$ip ";
