@@ -303,7 +303,11 @@ sub run_announce {
   # Get the check command. This will be prepended with the "timeout" utility for executing the check.
   my $command = get_value('command');
   my $timeout = get_value('timeout');
-  $cmd = "timeout $timeout $command";
+
+  # The check command needs any quoting removed from start/end
+  my $command_run = $command;
+  $command_run =~ s/^"//; $command_run =~ s/"$//;
+  $cmd = "timeout $timeout $command_run";
 
   # Should we log the check output
   $logcheck = get_value('logcheck');
@@ -377,7 +381,10 @@ sub run_announce {
         if (get_value('timeout') ne $timeout || get_value('command') ne $command) {
           if (get_value('timeout') ne $timeout) { $logger->info("$check: Check timeout has been changed from $timeout to ".get_value('timeout')); $timeout = get_value('timeout'); }
           if (get_value('command') ne $command) { $logger->info("$check: Check command has been changed from $command to ".get_value('command')); $command = get_value('command'); }
-          $cmd = "timeout $timeout $command";
+          # The check command needs any quoting removed from start/end
+          $command_run = $command;
+          $command_run =~ s/^"//; $command_run =~ s/"$//;
+          $cmd = "timeout $timeout $command_run";
         }
 
         # Define the variable $changes - this will be set if there are changes that require all routes to be withdrawn and announced again.
