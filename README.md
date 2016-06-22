@@ -61,9 +61,9 @@ For full instuctions, see the [CLI Usage wiki page].
 
   [ExaBGP]: <https://github.com/Exa-Networks/exabgp>
   [my blog post]: <https://sysadminblog.net/2016/04/exabgp-bgp-routing-health-checks/>
-  [Wiki]: <https://github.com/shthead/exabgp-healthcheck/wiki/>
-  [System Requirements wiki page]: <https://github.com/shthead/exabgp-healthcheck/wiki/System-Requirements>
-  [Installation wiki page]: <https://github.com/shthead/exabgp-healthcheck/wiki/Installation>
-  [quick start page]: <https://github.com/shthead/exabgp-healthcheck/wiki/Quick-Start>
-  [Configuration File wiki page]: <https://github.com/shthead/exabgp-healthcheck/wiki/Configuration-File>
-  [CLI Usage wiki page]: <https://github.com/shthead/exabgp-healthcheck/wiki/CLI-Usage>
+  [Wiki]: <https://github.com/sysadminblog/exabgp-healthcheck/wiki/>
+  [System Requirements wiki page]: <https://github.com/sysadminblog/exabgp-healthcheck/wiki/System-Requirements>
+  [Installation wiki page]: <https://github.com/sysadminblog/exabgp-healthcheck/wiki/Installation>
+  [quick start page]: <https://github.com/sysadminblog/exabgp-healthcheck/wiki/Quick-Start>
+  [Configuration File wiki page]: <https://github.com/sysadminblog/exabgp-healthcheck/wiki/Configuration-File>
+  [CLI Usage wiki page]: <https://github.com/sysadminblog/exabgp-healthcheck/wiki/CLI-Usage>
