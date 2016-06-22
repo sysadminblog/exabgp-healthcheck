@@ -2,7 +2,7 @@
 
 ########################################################################################
 # ExaBGP - Health Checking Script
-# GitHub project page: https://github.com/shthead/exabgp-healthcheck
+# GitHub project page: https://github.com/sysadminblog/exabgp-healthcheck
 ########################################################################################
 # This script is used with ExaBGP to control BGP announcements to various services.
 # The IP's are only announced if the health check passes.
@@ -919,7 +919,7 @@ sub start_log {
 sub print_version {
   print <<EOVERSION
 ExaBGP health check script - version $script_version.
-See the GitHub page for version history and change log: https://github.com/shthead/exabgp-healthcheck
+See the GitHub page for version history and change log: https://github.com/sysadminblog/exabgp-healthcheck
 EOVERSION
   ;exit;
 }
@@ -934,10 +934,10 @@ sub print_help {
   print <<EOUSAGE
 
   This script runs health checks for IP's that are announced via ExaBGP. Complete usage instructions are available
-  via the GitHub wiki page here: https://github.com/shthead/exabgp-healthcheck/wiki.
+  via the GitHub wiki page here: https://github.com/sysadminblog/exabgp-healthcheck/wiki.
 
   For more information, updates and to report bugs, see the GitHub project page:
-  https://github.com/shthead/exabgp-healthcheck
+  https://github.com/sysadminblog/exabgp-healthcheck
 
   Usage:
 
@@ -986,9 +986,9 @@ sub print_help {
 
   Links:
 
-    Installation instructions: https://github.com/shthead/exabgp-healthcheck/wiki/Installation
-    Configuration instructions: https://github.com/shthead/exabgp-healthcheck/wiki/Configuration-File
-    Command line options: https://github.com/shthead/exabgp-healthcheck/wiki/CLI-Usage
+    Installation instructions: https://github.com/sysadminblog/exabgp-healthcheck/wiki/Installation
+    Configuration instructions: https://github.com/sysadminblog/exabgp-healthcheck/wiki/Configuration-File
+    Command line options: https://github.com/sysadminblog/exabgp-healthcheck/wiki/CLI-Usage
 
 EOUSAGE
   ;exit;
