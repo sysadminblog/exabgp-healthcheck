@@ -1,4 +1,16 @@
 # ExaBGP-Healthcheck
+
+**NOT MAINTAINED**
+
+This project is no longer maintained. Various more modern alternatives are available, for example:
+
+- [ExaCheck](https://exacheck.net)
+- [ExaBGP healthcheck.py](https://github.com/Exa-Networks/exabgp/blob/main/src/exabgp/application/healthcheck.py)
+
+Although this utility may still work any bugs will not be fixed.
+
+-----
+
 ExaBGP healthcheck is a simple Perl script for use with [ExaBGP] which can control the announcing of routes based on the status of health checks. The health checks can be anything you like - the script only cares about the exit code (0 is success, anything else is a failure).
 
 Features:
